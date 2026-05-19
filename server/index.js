@@ -6,7 +6,8 @@ import cors from 'cors'
 import authRoutes from './routes/auth.js';
 import locationRoutes from './routes/location.routes.js';
 import plantRoutes from './routes/plants.routes.js';
-import pubchemRoutes from './routes/pubchem.routes.js';
+import coconutRoutes from './routes/coconut.routes.js';
+import DDPlantsRoutes from './routes/DDPlants.Routes.js';
 const app = express();
 app.use(cors())
 
@@ -21,7 +22,8 @@ app.use(express.urlencoded({extended: false}));
 app.use('/api/auth', authRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/plants', plantRoutes);
-app.use('/api/pubchem', pubchemRoutes);
+app.use('/api/coconut', coconutRoutes);
+app.use('/api/ddplants', DDPlantsRoutes);
 
 
 mongoose.connect(process.env.MONGO_URI)
