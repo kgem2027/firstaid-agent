@@ -8,12 +8,11 @@ router = APIRouter()
 
 @router.get("/nearby")
 async def nearby_plants(
-    latitude: float = Query(...),
-    longitude: float = Query(...),
+    country: str = Query(...),
     current_user=Depends(protect),
 ):
     try:
-        plants = await plants_service.get_nearby_plants(latitude, longitude)
+        plants = await plants_service.get_nearby_plants(country)
         return {"plants": plants}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

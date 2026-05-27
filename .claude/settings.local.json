@@ -10,7 +10,10 @@
       "Bash(Remove-Item -Recurse -Force venv)",
       "Bash(py -3.13 -m venv venv)",
       "Bash(venv/Scripts/pip install *)",
-      "Bash(venv/Scripts/pip show *)"
+      "Bash(venv/Scripts/pip show *)",
+      "Bash(where gcloud *)",
+      "Read(//c/Users/gemia/AppData/Local/Google/**)",
+      "Bash(venv/Scripts/python *)"
     ]
   }
 }

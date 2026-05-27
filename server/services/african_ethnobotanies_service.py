@@ -14,5 +14,16 @@ async def find_plant_by_latin_name(latin_name: str) -> list[AfricanEthnobotany]:
     except Exception as e:
         logger.error(f"Error while searching for plants: {e}")
         return []
-    
-    
+
+
+async def find_plants_by_condition(keywords: list[str]) -> list[AfricanEthnobotany]:
+    try:
+        regex = "|".join(re.escape(k) for k in keywords)
+        plants = await AfricanEthnobotany.find(
+            {"health_problems": {"$regex": regex, "$options": "i"}}
+        ).to_list()
+        logger.debug(f"African plants found for keywords {keywords}: {len(plants)}")
+        return plants
+    except Exception as e:
+        logger.error(f"Error while searching African plants by condition: {e}")
+        return []
