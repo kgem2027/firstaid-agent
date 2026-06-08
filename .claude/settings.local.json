@@ -13,7 +13,9 @@
       "Bash(venv/Scripts/pip show *)",
       "Bash(where gcloud *)",
       "Read(//c/Users/gemia/AppData/Local/Google/**)",
-      "Bash(venv/Scripts/python *)"
+      "Bash(venv/Scripts/python *)",
+      "WebFetch(domain:rapid-agent.devpost.com)",
+      "Bash(dir \"C:\\\\Users\\\\gemia\\\\OneDrive\\\\firstaid-Agent\\\\server\")"
     ]
   }
 }

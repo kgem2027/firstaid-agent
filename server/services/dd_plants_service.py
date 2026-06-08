@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from models.dd_plants import DDPlant
 from models.farmacies import Farmacy
 from models.ethnobotanies import Ethnobotany
@@ -40,6 +41,39 @@ async def find_plant_by_location(country: str) -> list[Ethnobotany]:
     plants = await Ethnobotany.find(Ethnobotany.country == country).to_list()
     logger.debug(f"Plants found for country '{country}': {len(plants)}")
     return plants
+
+async def filter_plants_by_activities(plant_names: list[str], keywords: list[str]) -> list[dict]:
+    """Return only plants from plant_names that have matching activities in DukesDB."""
+    activity_regex = "|".join(keywords)
+    normalized_lookup = {_normalize_taxon(n).lower() for n in plant_names}
+    logger.info(f"filter_plants_by_activities: checking {len(normalized_lookup)} plants against DukesDB")
+
+    records = await Ethnobotany.find(
+        {"activity": {"$regex": activity_regex, "$options": "i"}}
+    ).to_list()
+
+    by_taxon: dict[str, set] = {}
+    for r in records:
+        if not r.taxon:
+            continue
+        if _normalize_taxon(r.taxon).lower() not in normalized_lookup:
+            continue
+        by_taxon.setdefault(r.taxon, set())
+        if r.activity:
+            by_taxon[r.taxon].add(r.activity)
+
+    plants = await DDPlant.find({"taxon": {"$in": list(by_taxon.keys())}}).to_list()
+    common_names = {p.taxon: p.common_names[0] if p.common_names else p.taxon for p in plants if p.taxon}
+
+    return [
+        {
+            "taxon": taxon,
+            "commonName": common_names.get(taxon, taxon),
+            "matchingUses": list(uses),
+        }
+        for taxon, uses in by_taxon.items()
+    ]
+
 
 async def search_plants_by_activities(keywords: list[str]) -> list[dict]:
     regex = "|".join(keywords)

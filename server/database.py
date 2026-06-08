@@ -8,10 +8,7 @@ from models.farmacies import Farmacy
 from models.ethnobotanies import Ethnobotany
 from models.chemicals import Chemical
 from models.session import Session
-from models.africanEthnobotanies import AfricanEthnobotany
-from models.chineseEthnobotanies import ChineseEthnobotany
-from models.europeanEthnobotanies import EuropeanEthnobotany
-from models.indianEthnobotanies import IndianEthnobotany
+from models.unifiedEthnobotanies import UnifiedEthnobotany
 
 
 async def connect_db():
@@ -24,6 +21,6 @@ async def connect_db():
     await init_beanie(
         database=db,
         document_models=[User, DDPlant, Farmacy, Ethnobotany, Chemical, Session,
-                         AfricanEthnobotany, ChineseEthnobotany, EuropeanEthnobotany, IndianEthnobotany],
+                         UnifiedEthnobotany],
     )
     print("Connected to MongoDB!")
