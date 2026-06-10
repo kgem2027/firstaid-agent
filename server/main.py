@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import connect_db
-from routes import auth, location, plants, dd_plants, analyze
+from routes import auth, location, plants, dd_plants, analyze, history
 
 
 @asynccontextmanager
@@ -33,3 +33,4 @@ app.include_router(location.router, prefix="/api/location", tags=["location"])
 app.include_router(plants.router, prefix="/api/plants", tags=["plants"])
 app.include_router(dd_plants.router, prefix="/api/ddplants", tags=["ddplants"])
 app.include_router(analyze.router, prefix="/api/analyze", tags=["analyze"])
+app.include_router(history.router, prefix="/api/history", tags=["history"])

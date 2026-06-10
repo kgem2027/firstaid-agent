@@ -15,7 +15,13 @@
       "Read(//c/Users/gemia/AppData/Local/Google/**)",
       "Bash(venv/Scripts/python *)",
       "WebFetch(domain:rapid-agent.devpost.com)",
-      "Bash(dir \"C:\\\\Users\\\\gemia\\\\OneDrive\\\\firstaid-Agent\\\\server\")"
+      "Bash(dir \"C:\\\\Users\\\\gemia\\\\OneDrive\\\\firstaid-Agent\\\\server\")",
+      "WebSearch",
+      "Bash(npx -y mongodb-mcp-server --version)",
+      "Bash(.venv\\\\Scripts\\\\python.exe -c \"import slowapi\")",
+      "Bash(.venv\\\\Scripts\\\\python.exe -c \"import email_validator\")",
+      "Bash(venv\\\\Scripts\\\\python.exe -c \"import slowapi\")",
+      "Bash(venv\\\\Scripts\\\\python.exe -c \"import email_validator\")"
     ]
   }
 }

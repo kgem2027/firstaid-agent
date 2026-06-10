@@ -1,4 +1,4 @@
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 from beanie import init_beanie
 import os
 
@@ -10,14 +10,21 @@ from models.chemicals import Chemical
 from models.session import Session
 from models.unifiedEthnobotanies import UnifiedEthnobotany
 
+_mongo_client: AsyncIOMotorClient | None = None
+
+
+def get_analysis_collection() -> AsyncIOMotorCollection:
+    return _mongo_client["MCP"]["analysis"]
+
 
 async def connect_db():
+    global _mongo_client
     mongo_uri = os.getenv("MONGO_URI")
-    client = AsyncIOMotorClient(mongo_uri)
+    _mongo_client = AsyncIOMotorClient(mongo_uri)
     try:
-        db = client.get_default_database()
+        db = _mongo_client.get_default_database()
     except Exception:
-        db = client[os.getenv("DB_NAME", "firstaid")]
+        db = _mongo_client[os.getenv("DB_NAME", "firstaid")]
     await init_beanie(
         database=db,
         document_models=[User, DDPlant, Farmacy, Ethnobotany, Chemical, Session,

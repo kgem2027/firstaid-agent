@@ -1,8 +1,11 @@
+import asyncio
 import json
 import logging
 import os
 import re
 import uuid
+from mcp import ClientSession, StdioServerParameters as McpStdioParams
+from mcp.client.stdio import stdio_client
 
 os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "1")
 os.environ.setdefault("GOOGLE_CLOUD_PROJECT", os.getenv("GOOGLE_CLOUD_PROJECT", "firstaid-agent"))
@@ -112,6 +115,8 @@ EXCLUDE_USE_TYPES = [
 ]
 
 _APP_NAME = "firstaid_agent"
+_MCP_DB = "MCP"
+_MCP_COLLECTION = "analysis"
 
 
 def _filter_unsafe(plants: list) -> list:
@@ -322,61 +327,144 @@ _SYSTEM_PROMPT = (
     "Return only valid JSON, no markdown or extra text."
 )
 
-_agent = LlmAgent(
-    name=_APP_NAME,
-    model="gemini-2.5-flash",
-    instruction=_SYSTEM_PROMPT,
-    tools=[
-        get_nearby_plants_tool,
-        search_african_ethnobotanies,
-        search_chinese_ethnobotanies,
-        search_european_ethnobotanies,
-        search_indian_ethnobotanies,
-        search_north_american_ethnobotanies,
-        check_inat_plants_in_dukes_db,
-    ],
-)
-
 _session_service = InMemorySessionService()
-_runner = Runner(agent=_agent, app_name=_APP_NAME, session_service=_session_service)
 
 
-async def analyze_ailment(image_bytes: bytes, symptoms: str, country: str) -> dict:
-    session = await _session_service.create_session(
-        app_name=_APP_NAME,
-        user_id="user",
-        session_id=str(uuid.uuid4()),
+def _mcp_server_params():
+    return McpStdioParams(
+        command="npx",
+        args=["-y", "mongodb-mcp-server"],
+        env={**os.environ, "MDB_MCP_CONNECTION_STRING": os.getenv("MONGO_URI")},
     )
 
-    message = types.Content(
-        role="user",
-        parts=[
-            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-            types.Part(
-                text=(
-                    f"Symptoms: {symptoms}\n"
-                    f"User country: {country}\n\n"
-                    "Follow the steps in the system prompt exactly. "
-                    "Start by calling get_nearby_plants_tool, then look up each plant in the ethnobotany "
-                    "and Duke's databases before returning your final JSON."
+
+async def analyze_ailment(image_bytes: bytes, symptoms: str, country: str, user_id: str) -> dict:
+    result_future: asyncio.Future[dict] = asyncio.get_running_loop().create_future()
+
+    async def _run_with_mcp() -> None:
+        try:
+            async with stdio_client(_mcp_server_params()) as (read, write):
+                async with ClientSession(read, write) as mcp:
+                    await mcp.initialize()
+                    logger.info("MCP: session started")
+
+                    # Step 0: fetch past analyses for this user
+                    history_text = ""
+                    try:
+                        res = await asyncio.wait_for(
+                            mcp.call_tool("find", {
+                                "database": _MCP_DB,
+                                "collection": _MCP_COLLECTION,
+                                "filter": {"user_id": user_id},
+                                "limit": 3,
+                            }),
+                            timeout=10.0,
+                        )
+                        history = json.loads(res.content[0].text) if res.content else []
+                        if history:
+                            history_text = (
+                                f"\nThis user's past analysis (use as context, avoid repeating the same plants):\n"
+                                f"{json.dumps(history, indent=2)}\n"
+                            )
+                            logger.info(f"MCP: found {len(history)} past analysis for user")
+                        else:
+                            logger.info("MCP: no past analysis found for user")
+                    except Exception as e:
+                        logger.warning(f"MCP find failed (non-fatal): {e}")
+
+                    agent = LlmAgent(
+                        name=_APP_NAME,
+                        model="gemini-2.5-flash",
+                        instruction=_SYSTEM_PROMPT,
+                        tools=[
+                            get_nearby_plants_tool,
+                            search_african_ethnobotanies,
+                            search_chinese_ethnobotanies,
+                            search_european_ethnobotanies,
+                            search_indian_ethnobotanies,
+                            search_north_american_ethnobotanies,
+                            check_inat_plants_in_dukes_db,
+                        ],
+                    )
+
+                    runner = Runner(agent=agent, app_name=_APP_NAME, session_service=_session_service)
+                    session = await _session_service.create_session(
+                        app_name=_APP_NAME,
+                        user_id=user_id,
+                        session_id=str(uuid.uuid4()),
+                    )
+
+                    message = types.Content(
+                        role="user",
+                        parts=[
+                            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                            types.Part(
+                                text=(
+                                    f"Symptoms: {symptoms}\n"
+                                    f"User country: {country}\n"
+                                    f"{history_text}\n"
+                                    "Follow the steps in the system prompt exactly."
+                                )
+                            ),
+                        ],
+                    )
+
+                    final_text = None
+                    async for event in runner.run_async(
+                        user_id=user_id,
+                        session_id=session.id,
+                        new_message=message,
+                    ):
+                        if event.is_final_response() and event.content and event.content.parts:
+                            final_text = event.content.parts[0].text
+
+                    if not final_text:
+                        raise RuntimeError("ADK agent did not produce a final response")
+
+                    final_text = final_text.strip()
+                    final_text = re.sub(r"^```(?:json)?\s*", "", final_text)
+                    final_text = re.sub(r"\s*```$", "", final_text)
+                    result = json.loads(final_text)
+
+                    # Resolve the future BEFORE context managers exit so the HTTP
+                    # response is sent even if MCP cleanup hangs.
+                    result_future.set_result(result)
+
+                    asyncio.create_task(_mcp_save(user_id, symptoms, country, result))
+                    # Context managers exit here; cleanup may be slow but no longer blocks the caller.
+
+        except Exception as e:
+            if not result_future.done():
+                result_future.set_exception(e)
+
+    asyncio.create_task(_run_with_mcp())
+    return await result_future
+
+
+async def _mcp_save(user_id: str, symptoms: str, country: str, result: dict) -> None:
+    try:
+        async with stdio_client(_mcp_server_params()) as (read, write):
+            async with ClientSession(read, write) as mcp:
+                await mcp.initialize()
+                save_res = await asyncio.wait_for(
+                    mcp.call_tool("insert-many", {
+                        "database": _MCP_DB,
+                        "collection": _MCP_COLLECTION,
+                        "documents": [{
+                            "user_id": user_id,
+                            "symptoms": symptoms,
+                            "country": country,
+                            "condition": result.get("condition"),
+                            "compoundKeywords": result.get("compoundKeywords", []),
+                            "remedyPlants": result.get("remedyPlants", []),
+                        }],
+                    }),
+                    timeout=10.0,
                 )
-            ),
-        ],
-    )
-
-    final_text = None
-    async for event in _runner.run_async(
-        user_id="user",
-        session_id=session.id,
-        new_message=message,
-    ):
-        if event.is_final_response() and event.content and event.content.parts:
-            final_text = event.content.parts[0].text
-
-    if not final_text:
-        raise RuntimeError("ADK agent did not produce a final response")
-
-    final_text = final_text.strip()
-    final_text = re.sub(r"^```(?:json)?\s*", "", final_text)
-    final_text = re.sub(r"\s*```$", "", final_text)
-    return json.loads(final_text)
+                save_text = save_res.content[0].text if save_res.content else ""
+                if '"error"' in save_text.lower() or '"iserror": true' in save_text.lower():
+                    logger.warning(f"MCP save returned error: {save_text}")
+                else:
+                    logger.info(f"MCP: analysis saved to 'analysis' collection: {save_text}")
+    except BaseException as e:
+        logger.warning(f"MCP save failed (non-fatal): {e}")
