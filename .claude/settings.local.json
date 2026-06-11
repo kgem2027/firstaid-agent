@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(./venv/Scripts/pip install *)",
+      "Bash(./venv/Scripts/python -c ' *)",
+      "Bash(where python *)",
+      "Bash(py -0)",
+      "Read(//c/ServBay/packages/python/**)",
+      "Bash(Remove-Item -Recurse -Force venv)",
+      "Bash(py -3.13 -m venv venv)",
+      "Bash(venv/Scripts/pip install *)",
+      "Bash(venv/Scripts/pip show *)",
+      "Bash(where gcloud *)",
+      "Read(//c/Users/gemia/AppData/Local/Google/**)",
+      "Bash(venv/Scripts/python *)",
+      "WebFetch(domain:rapid-agent.devpost.com)",
+      "Bash(dir \"C:\\\\Users\\\\gemia\\\\OneDrive\\\\firstaid-Agent\\\\server\")",
+      "WebSearch",
+      "Bash(npx -y mongodb-mcp-server --version)",
+      "Bash(.venv\\\\Scripts\\\\python.exe -c \"import slowapi\")",
+      "Bash(.venv\\\\Scripts\\\\python.exe -c \"import email_validator\")",
+      "Bash(venv\\\\Scripts\\\\python.exe -c \"import slowapi\")",
+      "Bash(venv\\\\Scripts\\\\python.exe -c \"import email_validator\")"
+    ]
+  }
+}
