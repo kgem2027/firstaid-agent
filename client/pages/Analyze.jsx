@@ -33,7 +33,7 @@ export default function Analyze() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.image) return setError('Please upload a plant image.')
+    if (!form.image) return setError('Please upload an image of your ailment.')
     if (!form.symptoms.trim()) return setError('Please describe your symptoms.')
     if (!form.country.trim()) return setError('Please enter your country.')
     setLoading(true)
@@ -78,7 +78,7 @@ export default function Analyze() {
             id="country"
             name="country"
             type="text"
-            placeholder="e.g. India, Brazil"
+            placeholder="e.g. India, China, Europe"
             value={form.country}
             onChange={handleChange}
             className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
@@ -99,7 +99,7 @@ export default function Analyze() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="image" className="font-medium">Plant Image</label>
+          <label htmlFor="image" className="font-medium">Ailment Image</label>
           <input
             id="image"
             name="image"
