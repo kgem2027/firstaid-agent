@@ -22,7 +22,10 @@
       "Bash(.venv\\\\Scripts\\\\python.exe -c \"import email_validator\")",
       "Bash(venv\\\\Scripts\\\\python.exe -c \"import slowapi\")",
       "Bash(venv\\\\Scripts\\\\python.exe -c \"import email_validator\")",
-      "Bash(cat > *)"
+      "Bash(cat > *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "\\mnt\\c\\Users\\gemia\\OneDrive\\firstaid-Agent\\server"
