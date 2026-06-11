@@ -33,6 +33,9 @@ export default function Analyze() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!form.image) return setError('Please upload a plant image.')
+    if (!form.symptoms.trim()) return setError('Please describe your symptoms.')
+    if (!form.country.trim()) return setError('Please enter your country.')
     setLoading(true)
     setError(null)
     setResults(null)
