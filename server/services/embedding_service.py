@@ -9,11 +9,18 @@ logger = logging.getLogger(__name__)
 _URL = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
 
 
+def _api_key() -> str:
+    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+
+
 def _embed_one(text: str) -> list[float]:
     response = httpx.post(
         _URL,
-        params={"key": os.getenv("GOOGLE_API_KEY")},
-        json={"content": {"parts": [{"text": text}]}},
+        params={"key": _api_key()},
+        json={
+            "model": "models/text-embedding-004",
+            "content": {"parts": [{"text": text}]},
+        },
         timeout=30.0,
     )
     response.raise_for_status()
