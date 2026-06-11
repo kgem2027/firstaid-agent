@@ -18,7 +18,7 @@ function AppContent() {
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/analyze" />} />
         <Route path="/register" element={!user ? <Register /> : <Navigate to="/analyze" />} />
         <Route path="/history" element={<History />} />
-
+        <Route path="*" element={<Navigate to="/register" replace />} />
       </Routes>
     </div>
   )
