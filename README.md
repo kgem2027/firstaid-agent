@@ -10,7 +10,7 @@ An AI-powered plant medicine guide. Upload a photo of your ailment, describe you
 4. A regional ethnobotany database is searched semantically using keyword embeddings
 5. Dr. Duke's Phytochemical Database is cross-referenced against the iNaturalist results
 6. A curated, safety-filtered plant list is returned with sources and matching uses
-
+7. Uses MongoDB MCP to log all anaysis provided
 ## Tech stack
 
 **Frontend:** React 19, React Router 7, Tailwind CSS 4, Vite 8, Axios
