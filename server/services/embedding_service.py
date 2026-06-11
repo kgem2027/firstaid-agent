@@ -10,6 +10,12 @@ _MODEL = "text-embedding-004"
 
 
 def _get_client() -> genai.Client:
+    project = os.getenv("GOOGLE_CLOUD_PROJECT")
+    location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+    if project:
+        # In GCP deployment, use Vertex AI backend with service account ADC
+        return genai.Client(vertexai=True, project=project, location=location)
+    # Local dev: use Gemini API key
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
     return genai.Client(api_key=api_key)
 
