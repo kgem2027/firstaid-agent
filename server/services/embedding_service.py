@@ -2,29 +2,27 @@ import asyncio
 import logging
 import os
 
-import vertexai
-from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
+from google import genai
 
 logger = logging.getLogger(__name__)
 
-_model: TextEmbeddingModel | None = None
+_client: genai.Client | None = None
 
 
-def _get_model() -> TextEmbeddingModel:
-    global _model
-    if _model is None:
-        vertexai.init(
-            project=os.getenv("GOOGLE_CLOUD_PROJECT", "firstaid-agent"),
-            location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-        )
-        _model = TextEmbeddingModel.from_pretrained("text-embedding-004")
-    return _model
+def _get_client() -> genai.Client:
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+    return _client
 
 
 def _embed_sync(texts: list[str]) -> list[list[float]]:
-    model = _get_model()
-    inputs = [TextEmbeddingInput(t, "SEMANTIC_SIMILARITY") for t in texts]
-    return [r.values for r in model.get_embeddings(inputs)]
+    client = _get_client()
+    result = client.models.embed_content(
+        model="text-embedding-004",
+        contents=texts,
+    )
+    return [e.values for e in result.embeddings]
 
 
 async def embed_texts(texts: list[str]) -> list[list[float]]:
