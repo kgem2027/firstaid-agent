@@ -18,11 +18,14 @@ def _get_client() -> genai.Client:
 
 def _embed_sync(texts: list[str]) -> list[list[float]]:
     client = _get_client()
-    result = client.models.embed_content(
-        model="text-embedding-004",
-        contents=texts,
-    )
-    return [e.values for e in result.embeddings]
+    results = []
+    for text in texts:
+        result = client.models.embed_content(
+            model="text-embedding-004",
+            contents=text,
+        )
+        results.append(result.embeddings[0].values)
+    return results
 
 
 async def embed_texts(texts: list[str]) -> list[list[float]]:
