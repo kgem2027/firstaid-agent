@@ -6,7 +6,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-_URL = "https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent"
+_URL = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
 
 
 def _embed_one(text: str) -> list[float]:
