@@ -2,29 +2,22 @@ import asyncio
 import logging
 import os
 
-import httpx
+from google import genai
 
 logger = logging.getLogger(__name__)
 
-_URL = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent"
+_MODEL = "text-embedding-004"
 
 
-def _api_key() -> str:
-    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+def _get_client() -> genai.Client:
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+    return genai.Client(api_key=api_key)
 
 
 def _embed_one(text: str) -> list[float]:
-    response = httpx.post(
-        _URL,
-        params={"key": _api_key()},
-        json={
-            "model": "models/text-embedding-004",
-            "content": {"parts": [{"text": text}]},
-        },
-        timeout=30.0,
-    )
-    response.raise_for_status()
-    return response.json()["embedding"]["values"]
+    client = _get_client()
+    response = client.models.embed_content(model=_MODEL, contents=text)
+    return response.embeddings[0].values
 
 
 def _embed_sync(texts: list[str]) -> list[list[float]]:
